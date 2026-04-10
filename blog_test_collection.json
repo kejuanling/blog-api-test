@@ -1,0 +1,439 @@
+{
+  "info": {
+    "_postman_id": "3f83e5d3-d85f-4a22-af0e-ef2ce3244589",
+    "name": "资源管理业务流",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "53912918",
+    "_collection_link": "https://go.postman.co/collection/53912918-3f83e5d3-d85f-4a22-af0e-ef2ce3244589?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "01-创建帖子",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// 1. 验证创建成功（状态码200）\r",
+              "pm.test(\"创建文章成功，状态码200\", function () {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "// 2. 获取返回的HTML\r",
+              "const html = pm.response.text();\r",
+              "\r",
+              "// 3. 用正则提取所有文章ID\r",
+              "const idPattern = /\\/article\\/view\\/(\\d+)/g;\r",
+              "let match;\r",
+              "const ids = [];\r",
+              "while ((match = idPattern.exec(html)) !== null) {\r",
+              "    ids.push(parseInt(match[1]));\r",
+              "}\r",
+              "\r",
+              "// 4. 找出最大的ID（最新创建的文章）\r",
+              "const newId = Math.max(...ids);\r",
+              "console.log(\"当前所有文章ID:\", ids);\r",
+              "console.log(\"最新创建的文章ID:\", newId);\r",
+              "\r",
+              "// 5. 保存到全局变量\r",
+              "pm.globals.set(\"newArticleId\", parseInt(newId));\r",
+              "\r",
+              "// 6. 断言：成功提取到新ID\r",
+              "pm.test(\"成功提取新创建的文章ID\", function () {\r",
+              "    pm.expect(newId).to.be.above(0);\r",
+              "});\r",
+              "\r",
+              "// 7. 验证新创建的文章标题出现在列表中\r",
+              "pm.test(\"列表中包含新创建的文章标题\", function () {\r",
+              "    pm.expect(html).to.include(\"正则提取测试\");\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": " application/x-www-form-urlencoded",
+            "type": "text"
+          },
+          {
+            "key": "ngrok-skip-browser-warning",
+            "value": "true",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "title",
+              "value": "正则提取测试",
+              "type": "text",
+              "uuid": "d7c1a523-f32d-406f-a335-85985d12e897"
+            },
+            {
+              "key": "content",
+              "value": "这是用来测试正则表达式提取ID的文章内容",
+              "type": "text",
+              "uuid": "a7258f38-bd24-4eb1-99b4-9c8b9b3e3870"
+            }
+          ]
+        },
+        "url": {
+          "raw": "https://viselike-backside-antidote.ngrok-free.dev/article/create",
+          "protocol": "https",
+          "host": [
+            "viselike-backside-antidote",
+            "ngrok-free",
+            "dev"
+          ],
+          "path": [
+            "article",
+            "create"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "02-查询帖子",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// 验证状态码200\r",
+              "pm.test(\"查看文章页面正常\", function () {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "// 获取页面HTML\r",
+              "const html = pm.response.text();\r",
+              "\r",
+              "// 验证页面包含正确的标题\r",
+              "pm.test(\"页面标题正确\", function () {\r",
+              "    pm.expect(html).to.include(\"正则提取测试\");\r",
+              "});\r",
+              "\r",
+              "// 验证页面包含正确的内容\r",
+              "pm.test(\"页面内容正确\", function () {\r",
+              "    pm.expect(html).to.include(\"这是用来测试正则表达式提取ID的文章内容\");\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "ngrok-skip-browser-warning",
+            "value": "true",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "https://viselike-backside-antidote.ngrok-free.dev/article/view/{{newArticleId}}",
+          "protocol": "https",
+          "host": [
+            "viselike-backside-antidote",
+            "ngrok-free",
+            "dev"
+          ],
+          "path": [
+            "article",
+            "view",
+            "{{newArticleId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "03-更新帖子",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// 验证更新成功（303 是 StatusSeeOther，也是成功的）\r",
+              "pm.test(\"更新成功，状态码303\", function () {\r",
+              "    pm.response.to.have.status(303);\r",
+              "});\r",
+              "\r",
+              "// 验证重定向到首页\r",
+              "pm.test(\"重定向到首页\", function () {\r",
+              "    pm.expect(pm.response.headers.get(\"Location\")).to.equal(\"/\");\r",
+              "});\r",
+              "\r",
+              "// 获取返回的HTML\r",
+              "const html = pm.response.text();\r",
+              "\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": " application/x-www-form-urlencoded",
+            "type": "text"
+          },
+          {
+            "key": "ngrok-skip-browser-warning",
+            "value": "true",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "id",
+              "value": " {{newArticleId}}",
+              "type": "text"
+            },
+            {
+              "key": "title",
+              "value": " 更新后的标题",
+              "type": "text"
+            },
+            {
+              "key": "content",
+              "value": " 这是通过Postman更新的内容",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "https://viselike-backside-antidote.ngrok-free.dev/article/update",
+          "protocol": "https",
+          "host": [
+            "viselike-backside-antidote",
+            "ngrok-free",
+            "dev"
+          ],
+          "path": [
+            "article",
+            "update"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "03.5-验证更新结果",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// 验证页面能正常访问\r",
+              "pm.test(\"查看文章页面正常\", function () {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "const html = pm.response.text();\r",
+              "\r",
+              "// 验证标题已更新\r",
+              "pm.test(\"标题已更新为预期值\", function () {\r",
+              "    pm.expect(html).to.include(\"更新后的标题\");\r",
+              "});\r",
+              "\r",
+              "// 验证内容已更新\r",
+              "pm.test(\"内容已更新为预期值\", function () {\r",
+              "    pm.expect(html).to.include(\"这是通过Postman更新的内容\");\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "ngrok-skip-browser-warning",
+            "value": "true",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "https://viselike-backside-antidote.ngrok-free.dev/article/view/{{newArticleId}}",
+          "protocol": "https",
+          "host": [
+            "viselike-backside-antidote",
+            "ngrok-free",
+            "dev"
+          ],
+          "path": [
+            "article",
+            "view",
+            "{{newArticleId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "04-验证更新成功",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// 验证更新成功\r",
+              "pm.test(\"更新成功，状态码200\", function () {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "// 验证更新后的标题出现在列表中\r",
+              "const html = pm.response.text();\r",
+              "pm.test(\"列表中显示更新后的标题\", function () {\r",
+              "    pm.expect(html).to.include(\"更新后的标题\");\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "ngrok-skip-browser-warning",
+            "value": "true",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "https://viselike-backside-antidote.ngrok-free.dev/",
+          "protocol": "https",
+          "host": [
+            "viselike-backside-antidote",
+            "ngrok-free",
+            "dev"
+          ],
+          "path": [
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "05-删除帖子",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// 验证删除后重定向或返回成功\r",
+              "pm.test(\"删除成功，状态码200或302\", function () {\r",
+              "    pm.expect(pm.response.code === 200 || pm.response.code === 302).to.be.true;\r",
+              "});\r",
+              "\r",
+              "// 验证删除后，列表中不再包含该文章\r",
+              "// 注意：删除接口返回的是重定向，需要再发一次GET请求验证\r",
+              "// 这一步可以单独做一个测试"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "ngrok-skip-browser-warning",
+            "value": "true",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "https://viselike-backside-antidote.ngrok-free.dev/article/delete/{{newArticleId}}",
+          "protocol": "https",
+          "host": [
+            "viselike-backside-antidote",
+            "ngrok-free",
+            "dev"
+          ],
+          "path": [
+            "article",
+            "delete",
+            "{{newArticleId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "06-验证删除成功",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"删除后列表不再包含该文章\", function () {\r",
+              "    const html = pm.response.text();\r",
+              "    const deletedId = pm.globals.get(\"newArticleId\");\r",
+              "    // 检查页面中是否还有指向该ID的链接\r",
+              "    pm.expect(html).to.not.include(`/article/view/${deletedId}`);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "ngrok-skip-browser-warning",
+            "value": "true",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "https://viselike-backside-antidote.ngrok-free.dev/",
+          "protocol": "https",
+          "host": [
+            "viselike-backside-antidote",
+            "ngrok-free",
+            "dev"
+          ],
+          "path": [
+            ""
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
