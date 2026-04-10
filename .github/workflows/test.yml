@@ -1,0 +1,31 @@
+name: API 接口自动化测试
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: 安装 Newman
+        run: npm install -g newman newman-reporter-htmlextra
+      
+      - name: 运行测试
+        run: newman run blog_test_collection.json -r htmlextra
+      
+      - name: 上传测试报告
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: newman
